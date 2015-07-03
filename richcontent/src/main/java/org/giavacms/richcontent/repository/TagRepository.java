@@ -1,20 +1,18 @@
 package org.giavacms.richcontent.repository;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import org.giavacms.api.model.Search;
+import org.giavacms.api.repository.AbstractRepository;
+import org.giavacms.richcontent.model.Tag;
 
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Named;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-
-import org.giavacms.common.model.Search;
-import org.giavacms.common.repository.AbstractRepository;
-import org.giavacms.richcontent.model.RichContent;
-import org.giavacms.richcontent.model.Tag;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @Named
 @Stateless
@@ -91,7 +89,8 @@ public class TagRepository extends AbstractRepository<Tag>
             {
                if (names[i].trim().length() > 0)
                {
-                  orBuffer.append(orSeparator).append(alias).append(".richContent.richContentType.name = :NAMETYPE" + i + " ");
+                  orBuffer.append(orSeparator).append(alias)
+                           .append(".richContent.richContentType.name = :NAMETYPE" + i + " ");
                   params.put("NAMETYPE" + i, names[i].trim());
                   orSeparator = " or ";
                }
@@ -133,15 +132,6 @@ public class TagRepository extends AbstractRepository<Tag>
          separator = " and ";
       }
 
-      // BASE PAGE
-      if (search.getObj().getRichContent() != null && search.getObj().getRichContent().getTemplate() != null
-               && search.getObj().getRichContent().getTemplate().getId() != null)
-      {
-         sb.append(separator).append(alias).append(".richContent.template.id = :BASEPAGE_TEMPLATE_ID ");
-         params.put("BASEPAGE_TEMPLATE_ID", search.getObj().getRichContent().getTemplate().getId());
-         separator = " and ";
-      }
-
       // TITLE
       if (search.getObj().getRichContent() != null && search.getObj().getRichContent().getTitle() != null
                && !search.getObj().getRichContent().getTitle().trim().isEmpty())
@@ -152,36 +142,6 @@ public class TagRepository extends AbstractRepository<Tag>
          if (likeSearch)
          {
             separator = " and ";
-         }
-      }
-
-      // LINGUA
-      if (search.getObj().getRichContent() != null && search.getObj().getRichContent().getLang() > 0)
-      {
-         if (search.getObj().getRichContent().getLang() == 1)
-         {
-            sb.append(separator).append(alias).append(".richContent.id = ")
-                     .append(alias).append("richContent.lang1id ");
-         }
-         else if (search.getObj().getRichContent().getLang() == 2)
-         {
-            sb.append(separator).append(alias).append(".richContent.id = ")
-                     .append(alias).append("richContent.lang2id ");
-         }
-         else if (search.getObj().getRichContent().getLang() == 3)
-         {
-            sb.append(separator).append(alias).append(".richContent.id = ")
-                     .append(alias).append("richContent.lang3id ");
-         }
-         else if (search.getObj().getRichContent().getLang() == 4)
-         {
-            sb.append(separator).append(alias).append(".richContent.id = ")
-                     .append(alias).append("richContent.lang4id ");
-         }
-         else if (search.getObj().getRichContent().getLang() == 5)
-         {
-            sb.append(separator).append(alias).append(".richContent.id = ")
-                     .append(alias).append("richContent.lang5id ");
          }
       }
 
@@ -245,35 +205,6 @@ public class TagRepository extends AbstractRepository<Tag>
          separator = " and ";
       }
 
-      super.applyRestrictions(search, alias, separator, sb, params);
-
-   }
-
-   @Override
-   protected Tag construct(List<String> fieldNames, List<Object> fieldValues)
-   {
-      Tag t = new Tag();
-      t.setRichContent(new RichContent());
-      for (int i = 0; i < fieldNames.size(); i++)
-      {
-         if ("tagName".equals(fieldNames.get(i)))
-         {
-            t.setTagName((String) fieldValues.get(i));
-         }
-         else if ("day".equals(fieldNames.get(i)))
-         {
-            t.setDay((Integer) fieldValues.get(i));
-         }
-         else if ("month".equals(fieldNames.get(i)))
-         {
-            t.setMonth((Integer) fieldValues.get(i));
-         }
-         else if ("year".equals(fieldNames.get(i)))
-         {
-            t.setYear((Integer) fieldValues.get(i));
-         }
-      }
-      return t;
    }
 
    public void set(String richContentId, List<String> tagList, Date date)
@@ -303,4 +234,29 @@ public class TagRepository extends AbstractRepository<Tag>
       return true;
    }
 
+   @Override
+   protected Tag construct(List<String> fieldNames, List<Object> fieldValues)
+   {
+      Tag t = new Tag();
+      for (int i = 0; i < fieldNames.size(); i++)
+      {
+         if ("tagName".equals(fieldNames.get(i)))
+         {
+            t.setTagName((String) fieldValues.get(i));
+         }
+         else if ("day".equals(fieldNames.get(i)))
+         {
+            t.setDay((Integer) fieldValues.get(i));
+         }
+         else if ("month".equals(fieldNames.get(i)))
+         {
+            t.setMonth((Integer) fieldValues.get(i));
+         }
+         else if ("year".equals(fieldNames.get(i)))
+         {
+            t.setYear((Integer) fieldValues.get(i));
+         }
+      }
+      return t;
+   }
 }

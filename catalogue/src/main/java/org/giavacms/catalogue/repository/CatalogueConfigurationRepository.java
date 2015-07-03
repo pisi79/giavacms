@@ -6,38 +6,21 @@
  */
 package org.giavacms.catalogue.repository;
 
+import org.giavacms.base.repository.BaseRepository;
+import org.giavacms.catalogue.model.CatalogueConfiguration;
+
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Named;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
-import org.giavacms.catalogue.model.CatalogueConfiguration;
-import org.giavacms.common.repository.AbstractRepository;
 
 @Named
 @Stateless
 @LocalBean
 public class CatalogueConfigurationRepository extends
-         AbstractRepository<CatalogueConfiguration>
+         BaseRepository<CatalogueConfiguration>
 {
 
    private static final long serialVersionUID = 1L;
-
-   @PersistenceContext
-   EntityManager em;
-
-   @Override
-   protected EntityManager getEm()
-   {
-      return em;
-   }
-
-   @Override
-   public void setEm(EntityManager em)
-   {
-      this.em = em;
-   }
 
    @Override
    protected String getDefaultOrderBy()
@@ -46,7 +29,7 @@ public class CatalogueConfigurationRepository extends
       return "id asc";
    }
 
-   public CatalogueConfiguration load()
+   public CatalogueConfiguration load() throws Exception
    {
       CatalogueConfiguration c = null;
       try

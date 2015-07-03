@@ -1,60 +1,63 @@
 package org.giavacms.faq.model;
 
+import org.giavacms.base.model.attachment.Image;
+
+import javax.persistence.*;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.OrderBy;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-
-import org.giavacms.base.model.Page;
-import org.giavacms.base.model.attachment.Image;
-
 @Entity
-@DiscriminatorValue(value = FaqCategory.EXTENSION)
-@Table(name = FaqCategory.TABLE_NAME)
-public class FaqCategory extends Page
+public class FaqCategory implements Serializable
 {
 
    private static final long serialVersionUID = 1L;
-   public static final String EXTENSION = "FaqCategory";
    public static final String TABLE_NAME = "FaqCategory";
-   public static final boolean HAS_DETAILS = true;
 
    public FaqCategory()
    {
-      super();
-      super.setExtension(EXTENSION);
    }
 
+   private Long id;
+   private String name;
+   private String description;
    private Image image;
    private Image newImage;
    private List<Faq> faqs;
    private int orderNum;
 
-   @Transient
-   @Deprecated
-   public String getName()
+   public Long getId()
    {
-      return super.getTitle();
+      return id;
    }
 
-   @Deprecated
+   public void setId(Long id)
+   {
+      this.id = id;
+   }
+
+   public String getName()
+   {
+      return name;
+   }
+
    public void setName(String name)
    {
-      super.setTitle(name);
+      this.name = name;
+   }
+
+   public String getDescription()
+   {
+      return description;
+   }
+
+   public void setDescription(String description)
+   {
+      this.description = description;
    }
 
    @OneToMany(mappedBy = "faqCategory", fetch = FetchType.LAZY)
-   // @OrderBy("question")
-   @OrderBy("title")
+   @OrderBy("name")
    public List<Faq> getFaqs()
    {
       if (faqs == null)
@@ -112,8 +115,8 @@ public class FaqCategory extends Page
    @Override
    public String toString()
    {
-      return "FaqCategory [id=" + super.getId() + ", name=" + super.getTitle() + ", description="
-               + super.getDescription() + ", active=" + super.isActive() + ", orderNum=" + orderNum
+      return "FaqCategory [id=" + getId() + ", name=" + name + ", description="
+               + description + ", orderNum=" + orderNum
                + "]";
    }
 

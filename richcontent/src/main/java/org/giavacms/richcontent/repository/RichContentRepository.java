@@ -1,176 +1,30 @@
 package org.giavacms.richcontent.repository;
 
-import java.math.BigInteger;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import org.giavacms.api.model.Search;
+import org.giavacms.api.util.IdUtils;
+import org.giavacms.base.model.attachment.Document;
+import org.giavacms.base.model.attachment.Image;
+import org.giavacms.base.repository.BaseRepository;
+import org.giavacms.base.util.DateUtils;
+import org.giavacms.base.util.StringUtils;
+import org.giavacms.base.util.TimeUtils;
+import org.giavacms.richcontent.model.RichContent;
+import org.giavacms.richcontent.model.RichContentType;
+import org.giavacms.richcontent.model.Tag;
 
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Named;
-
-import org.giavacms.base.common.util.HtmlUtils;
-import org.giavacms.base.controller.util.TimeUtils;
-import org.giavacms.base.model.Page;
-import org.giavacms.base.model.TemplateImpl;
-import org.giavacms.base.model.attachment.Document;
-import org.giavacms.base.model.attachment.Image;
-import org.giavacms.base.repository.AbstractPageRepository;
-import org.giavacms.common.model.Search;
-import org.giavacms.common.util.StringUtils;
-import org.giavacms.richcontent.model.RichContent;
-import org.giavacms.richcontent.model.Tag;
-import org.giavacms.richcontent.model.type.RichContentType;
+import javax.persistence.NoResultException;
+import java.util.*;
 
 @Named
 @Stateless
 @LocalBean
-public class RichContentRepository extends AbstractPageRepository<RichContent>
+public class RichContentRepository extends BaseRepository<RichContent>
 {
 
    private static final long serialVersionUID = 1L;
-
-   @Override
-   protected RichContent prePersist(RichContent n)
-   {
-      n.setClone(true);
-      if (n.getDate() == null)
-         n.setDate(new Date());
-      if (n.getRichContentType() != null
-               && n.getRichContentType().getId() != null)
-         n.setRichContentType(getEm().find(RichContentType.class,
-                  n.getRichContentType().getId()));
-      if (n.getDocuments() != null && n.getDocuments().size() == 0)
-      {
-         n.setDocuments(null);
-      }
-      if (n.getImages() != null && n.getImages().size() == 0)
-      {
-         n.setImages(null);
-      }
-      n.setDate(TimeUtils.adjustHourAndMinute(n.getDate()));
-      n.setContent(HtmlUtils.normalizeHtml(n.getContent()));
-      return super.prePersist(n);
-   }
-
-   @Override
-   protected RichContent preUpdate(RichContent n)
-   {
-      n.setClone(true);
-      if (n.getDate() == null)
-         n.setDate(new Date());
-      if (n.getRichContentType() != null
-               && n.getRichContentType().getId() != null)
-         n.setRichContentType(getEm().find(RichContentType.class,
-                  n.getRichContentType().getId()));
-      if (n.getDocuments() != null && n.getDocuments().size() == 0)
-      {
-         n.setDocuments(null);
-      }
-      if (n.getImages() != null && n.getImages().size() == 0)
-      {
-         n.setImages(null);
-      }
-      n.setDate(TimeUtils.adjustHourAndMinute(n.getDate()));
-      n.setContent(HtmlUtils.normalizeHtml(n.getContent()));
-      n = super.preUpdate(n);
-      return n;
-   }
-
-   public RichContent findLast()
-   {
-      RichContent ret = new RichContent();
-      try
-      {
-         ret = (RichContent) getEm()
-                  .createQuery(
-                           "select p from "
-                                    + RichContent.class.getSimpleName()
-                                    + " p order by p.date desc ")
-                  .setMaxResults(1).getSingleResult();
-         if (ret == null)
-         {
-            return null;
-         }
-         else
-         {
-            return this.fetch(ret.getId());
-         }
-      }
-      catch (Exception e)
-      {
-         e.printStackTrace();
-      }
-      return ret;
-   }
-
-   public RichContent getLast(String category, int lang)
-   {
-      Search<RichContent> r = new Search<RichContent>(RichContent.class);
-      r.getObj().getRichContentType().setName(category);
-      r.getObj().setLang(lang);
-      List<RichContent> list = getList(r, 0, 1);
-      return list.size() > 0 ? list.get(0) : new RichContent();
-   }
-
-   public RichContent getHighlight(String category, int lang)
-   {
-      Search<RichContent> r = new Search<RichContent>(RichContent.class);
-      r.getObj().getRichContentType().setName(category);
-      r.getObj().setLang(lang);
-      r.getObj().setHighlight(true);
-      List<RichContent> list = getList(r, 0, 1);
-      return list.size() > 0 ? list.get(0) : new RichContent();
-   }
-
-   public void refreshHighlight(String id, RichContentType type)
-   {
-      try
-      {
-         getEm()
-
-                  .createNativeQuery(
-                           "update "
-                                    + RichContent.TABLE_NAME
-                                    + " set highlight = :FALSE where id <> :NOTID AND richContentType_id = :TYPEID ")
-                  .setParameter("NOTID", id).setParameter("FALSE", false).setParameter("TYPEID", type.getId())
-                  .executeUpdate();
-      }
-      catch (Exception e)
-      {
-         logger.error(e.getMessage(), e);
-      }
-   }
-
-   @SuppressWarnings("unchecked")
-   public Image getHighlightImage(String type)
-   {
-      try
-      {
-         List<RichContent> nl = getEm()
-                  .createQuery(
-                           "select p from "
-                                    + RichContent.class.getSimpleName()
-                                    + " p where p.highlight = :STATUS and p.richContentType.name = :TYPE ")
-                  .setParameter("STATUS", true).setParameter("TYPE", type).setMaxResults(1).getResultList();
-         if (nl == null || nl.size() == 0 || nl.get(0).getImages() == null
-                  || nl.get(0).getImages().size() == 0)
-         {
-            return null;
-         }
-         return nl.get(0).getImages().get(0);
-
-      }
-      catch (Exception e)
-      {
-         e.printStackTrace();
-         return null;
-      }
-   }
 
    @Override
    protected String getDefaultOrderBy()
@@ -178,228 +32,201 @@ public class RichContentRepository extends AbstractPageRepository<RichContent>
       return "date desc";
    }
 
-   /**
-    * In case of a main table with one-to-many collections to fetch at once
-    * 
-    * we need an external query to read results and an internal query to apply parameters and paginate results
-    * 
-    * we need just the external query to apply parameters and count the overall distinct results
-    */
-   protected StringBuffer getListNative(Search<RichContent> search, Map<String, Object> params, boolean count,
-            int startRow, int pageSize, boolean completeFetch)
+   public List<Image> getImages(String id)
    {
+      // SELECT I.id, I.active, I.description, I.filename, I.name, I.type FROM Image I left join RichContent_Image RI on
+      // (I.id = RI.images_id) left join RichContent RC on (RC.id=RI.RichContent_id)
+      // where RC.id='1-agosto-ore-2130--le-marche-i-manicomi-i-matti-gli-amori' and I.active=true
 
-      // aliases to use in the external query
-      String pageAlias = "P";
-      String templateImplAlias = "T";
-      String richContentAlias = "R";
-      String richContentTypeAlias = "RT";
-      String imageAlias = "I";
-      String documentAlias = "D";
-
-      // query string buffer
-      StringBuffer sb = new StringBuffer(
-               "SELECT ");
-
-      if (count)
-      {
-         // we only count distinct results in case of count = true
-         sb.append(" count( distinct ").append(pageAlias).append(".id ) ");
-      }
-      else
-      {
-         // we select a cartesian product of master/details rows in case of count = false
-         sb.append(pageAlias).append(".id, ");
-         sb.append(pageAlias).append(".lang1id, ");
-         sb.append(pageAlias).append(".lang2id, ");
-         sb.append(pageAlias).append(".lang3id, ");
-         sb.append(pageAlias).append(".lang4id, ");
-         sb.append(pageAlias).append(".lang5id, ");
-         sb.append(pageAlias).append(".clone, ");
-         sb.append(pageAlias).append(".title, ");
-         sb.append(pageAlias).append(".description, ");
-         sb.append(templateImplAlias).append(".id as templateImpl_id, ");
-         sb.append(templateImplAlias).append(".mainPageId, ");
-         sb.append(templateImplAlias).append(".mainPageTitle, ");
-         sb.append(richContentAlias).append(".author, ");
-         sb.append(richContentAlias).append(".content, ");
-         sb.append(richContentAlias).append(".date, ");
-         sb.append(richContentAlias).append(".highlight, ");
-         sb.append(richContentAlias).append(".preview, ");
-         sb.append(richContentAlias).append(".tags,  ");
-         sb.append(richContentAlias).append(".richContentType_id, ");
-         sb.append(richContentTypeAlias).append(".name AS richContentType, ");
-         sb.append(imageAlias).append(".id AS imageId, ");
-         sb.append(imageAlias).append(".fileName AS image,");
-         sb.append(documentAlias).append(".id AS documentId, ");
-         sb.append(documentAlias).append(".fileName AS document ");
-         if (completeFetch)
-         {
-            // additional fields to retrieve only when fetching
-         }
-      }
-
-      // master-from clause is the same in both count = true and count = false
-      sb.append(" FROM ").append(RichContent.TABLE_NAME).append(" AS ").append(richContentAlias);
-      sb.append(" LEFT JOIN ").append(RichContentType.TABLE_NAME).append(" AS ").append(richContentTypeAlias)
-               .append(" ON ( ").append(richContentTypeAlias).append(".id = ").append(richContentAlias)
-               .append(".richContentType_id ) ");
-      sb.append(" LEFT JOIN ").append(Page.TABLE_NAME).append(" as ").append(pageAlias).append(" on ( ")
-               .append(richContentAlias).append(".id = ")
-               .append(pageAlias).append(".id ) ");
-      sb.append(" LEFT JOIN ").append(TemplateImpl.TABLE_NAME).append(" as ").append(templateImplAlias)
-               .append(" on ( ")
-               .append(templateImplAlias).append(".id = ")
-               .append(pageAlias).append(".template_id ) ");
-
-      if (count)
-      {
-         // we optimize the count query by avoiding useless left joins
-      }
-      else
-      {
-         // we need details-from clause in case of count = false
-         if (RichContent.HAS_DETAILS)
-         {
-            sb.append(" LEFT JOIN ").append(RichContent.TABLE_NAME).append("_").append(Document.TABLE_NAME)
-                     .append(" AS RD ON ( RD.").append(RichContent.TABLE_NAME).append("_id = ")
-                     .append(richContentAlias)
-                     .append(".id ) ");
-            sb.append(" LEFT JOIN ").append(Document.TABLE_NAME).append(" AS ").append(documentAlias)
-                     .append(" ON ( RD.documents_id = ").append(documentAlias)
-                     .append(".id ) ");
-            sb.append(" LEFT JOIN ").append(RichContent.TABLE_NAME).append("_").append(Image.TABLE_NAME)
-                     .append(" AS RI ON ( RI.").append(RichContent.TABLE_NAME).append("_id = ")
-                     .append(richContentAlias)
-                     .append(".id ) ");
-            sb.append(" LEFT JOIN ").append(Image.TABLE_NAME).append(" as ").append(imageAlias)
-                     .append(" on ( ").append(imageAlias)
-                     .append(".id = RI.images_id ) ");
-         }
-      }
-
-      String innerPageAlias = null;
-      String innerTemplateImplAlias = null;
-      String innerRichContentAlias = null;
-      String innerRichContentTypeAlias = null;
-      if (count)
-      {
-         // we don't need an inner query in case of count = true (because we only need distinct id to count,
-         // disregarding result pagination) so aliases stay the same
-         innerPageAlias = pageAlias;
-         innerTemplateImplAlias = templateImplAlias;
-         innerRichContentAlias = richContentAlias;
-         innerRichContentTypeAlias = richContentTypeAlias;
-      }
-      else if (RichContent.HAS_DETAILS)
-      {
-         // we need different aliases for the inner query in case of count = false or multiple detail rows for each
-         // master
-         innerPageAlias = "P1";
-         innerTemplateImplAlias = "T1";
-         innerRichContentAlias = "R1";
-         innerRichContentTypeAlias = "RT1";
-         // inner query comes as an inner join, because mysql does not support limit in subquerys
-         sb.append(" INNER JOIN ");
-
-         // this is the opening bracket for the internal query
-         sb.append(" ( ");
-
-         sb.append(" select distinct ").append(innerPageAlias)
-                  .append(".id from ");
-         sb.append(RichContent.TABLE_NAME).append(" AS ").append(innerRichContentAlias);
-         sb.append(" LEFT JOIN ").append(RichContentType.TABLE_NAME).append(" AS ").append(innerRichContentTypeAlias)
-                  .append(" ON ( ").append(innerRichContentTypeAlias).append(".id = ").append(innerRichContentAlias)
-                  .append(".richContentType_id ) ");
-         sb.append(" LEFT JOIN ").append(Page.TABLE_NAME).append(" as ").append(innerPageAlias).append(" on ( ")
-                  .append(innerRichContentAlias).append(".id = ")
-                  .append(innerPageAlias).append(".id ) ");
-         sb.append(" LEFT JOIN ").append(TemplateImpl.TABLE_NAME).append(" as ").append(innerTemplateImplAlias)
-                  .append(" on ( ")
-                  .append(innerTemplateImplAlias).append(".id = ")
-                  .append(innerPageAlias).append(".template_id ) ");
-      }
-      else
-      {
-         // we also don't need an inner query in case of master-data that has no multiple details
-         // so aliases can stay the same
-         innerPageAlias = pageAlias;
-         innerTemplateImplAlias = templateImplAlias;
-         innerRichContentAlias = richContentAlias;
-         innerRichContentTypeAlias = richContentTypeAlias;
-      }
-
-      // we append filters right after the latest query, so that they apply to the external one in case count = true and
-      // to the internal one in case count = false
-      String separator = " where ";
-      applyRestrictionsNative(search, innerPageAlias, innerTemplateImplAlias, innerRichContentAlias,
-               innerRichContentTypeAlias, separator, sb,
-               params);
-
-      if (count)
-      {
-         // if we only need to count distinct results, we are over!
-      }
-      else
-      {
-         // we need to sort internal results to apply pagination
-         sb.append(" order by ").append(innerRichContentAlias).append(".date desc ");
-
-         // we apply limit-clause only if we want pagination
-         if (pageSize > 0)
-         {
-            sb.append(" limit ").append(startRow).append(", ").append(pageSize).toString();
-         }
-
-         if (RichContent.HAS_DETAILS)
-         {
-            // this is the closing bracket for the internal query
-            sb.append(" ) ");
-            // this is where external id selection applies
-            sb.append(" as IN2 ON ").append(pageAlias).append(".ID = IN2.ID ");
-            // we also need to sort external results to keep result order within each results page
-            sb.append(" order by ").append(richContentAlias).append(".date desc ");
-            sb.append(", ").append(imageAlias).append(".id asc ");
-            sb.append(", ").append(documentAlias).append(".id asc ");
-         }
-
-      }
-      return sb;
+      return getEm()
+               .createNativeQuery(
+                        "SELECT I.id, I.active, I.description, I.filename, I.name, I.type FROM " + Image.TABLE_NAME
+                                 + " I left join " + RichContent.IMAGES_JOINTABLE_NAME
+                                 + " RI on (I.id = RI." + RichContent.IMAGE_FK + ") left join "
+                                 + RichContent.TABLE_NAME
+                                 + " RC on (RC.id=RI." + RichContent.TABLE_FK + ") "
+                                 + " where RC.id = :ID and I.active = :ACTIVE",
+                        Image.class).setParameter("ID", id).setParameter("ACTIVE", true)
+               .getResultList();
+      // return getEm()
+      // .createNativeQuery(
+      // "select * from " + Image.TABLE_NAME + " where id in ( "
+      // + "    select " + RichContent.IMAGE_FK + " from "
+      // + RichContent.IMAGES_JOINTABLE_NAME
+      // + " where " + RichContent.TABLE_FK + " = ( "
+      // + "       select id from " + RichContent.TABLE_NAME
+      // + "    ) "
+      // + " ) ", Image.class)
+      // .getResultList();
    }
 
-   protected void applyRestrictionsNative(Search<RichContent> search, String pageAlias, String templateImplAlias,
-            String richContentAlias,
-            String richContentTypeAlias, String separator, StringBuffer sb,
-            Map<String, Object> params)
+   public List<Document> getDocuments(String id)
+   {
+
+      // SELECT D.id, D.active, D.description, D.filename, D.name, D.type FROM Document D left join RichContent_Document
+      // RD on (D.id=RD.documents_id) left join RichContent RC on (RC.id=RD.RichContent_id)
+      // where RC.id = '1-agosto-ore-2130--le-marche-i-manicomi-i-matti-gli-amori' and D.active = true
+
+      return getEm()
+               .createNativeQuery(
+                        "SELECT D.id, D.active, D.description, D.filename, D.name, D.type  FROM " + Document.TABLE_NAME
+                                 + " D left join " + RichContent.DOCUMENTS_JOINTABLE_NAME + " RD on (D.id=RD."
+                                 + RichContent.DOCUMENT_FK
+                                 + ") left join " + RichContent.TABLE_NAME + " RC on (RC.id=RD.RichContent_id)"
+                                 + " where RC.id = :ID and D.active = :ACTIVE",
+                        Document.class).setParameter("ID", id).setParameter("ACTIVE", true)
+               .getResultList();
+      // return getEm()
+      // .createNativeQuery(
+      // "select * from " + Document.TABLE_NAME + " where id in ( "
+      // + "    select " + RichContent.DOCUMENT_FK + " from "
+      // + RichContent.DOCUMENTS_JOINTABLE_NAME
+      // + " where " + RichContent.TABLE_FK + " = ( "
+      // + "       select id from " + RichContent.TABLE_NAME
+      // + "    ) "
+      // + " ) ", Document.class)
+      // .getResultList();
+   }
+
+   @Override
+   protected RichContent prePersist(RichContent n)
+   {
+      String idTitle = IdUtils.createPageId(n.getTitle());
+      String idFinal = makeUniqueKey(idTitle, RichContent.TABLE_NAME);
+      n.setId(idFinal);
+      if (n.getDate() == null)
+         n.setDate(new Date());
+      if (n.getRichContentType() != null
+               && n.getRichContentType().getId() != null)
+         n.setRichContentType(getEm().find(RichContentType.class,
+                  n.getRichContentType().getId()));
+      if (n.getDocuments() != null && n.getDocuments().size() == 0)
+      {
+         n.setDocuments(null);
+      }
+      if (n.getImages() != null && n.getImages().size() == 0)
+      {
+         n.setImages(null);
+      }
+      n.setDate(TimeUtils.adjustHourAndMinute(n.getDate()));
+      n.setContent(n.getContent());
+      return n;
+   }
+
+   @Override
+   protected RichContent preUpdate(RichContent n)
+   {
+      if (n.getDate() == null)
+         n.setDate(new Date());
+      if (n.getRichContentType() != null
+               && n.getRichContentType().getId() != null)
+         n.setRichContentType(getEm().find(RichContentType.class,
+                  n.getRichContentType().getId()));
+      if (n.getDocuments() != null && n.getDocuments().size() == 0)
+      {
+         n.setDocuments(null);
+      }
+      if (n.getImages() != null && n.getImages().size() == 0)
+      {
+         n.setImages(null);
+      }
+      n.setDate(TimeUtils.adjustHourAndMinute(n.getDate()));
+      n.setContent(n.getContent());
+      return n;
+   }
+
+   public RichContent getLast() throws Exception
+   {
+      return getLast(null);
+   }
+
+   public RichContent getLast(String category) throws Exception
+   {
+      Search<RichContent> r = new Search<RichContent>(RichContent.class);
+      r.getObj().getRichContentType().setName(category);
+      List<RichContent> list = super.getList(r, 0, 1);
+      return list.size() > 0 ? list.get(0) : new RichContent();
+   }
+
+   public RichContent getHighlight(String category) throws Exception
+   {
+      Search<RichContent> r = new Search<RichContent>(RichContent.class);
+      r.getObj().getRichContentType().setName(category);
+      r.getObj().setHighlight(true);
+      List<RichContent> list = super.getList(r, 0, 1);
+      return list.size() > 0 ? list.get(0) : new RichContent();
+   }
+
+   public void refreshHighlight(String id, RichContentType type)
+   {
+      getEm()
+
+               .createNativeQuery(
+                        "update "
+                                 + RichContent.TABLE_NAME
+                                 + " set highlight = :FALSE where id <> :NOTID AND richContentType_id = :TYPEID ")
+               .setParameter("NOTID", id).setParameter("FALSE", false).setParameter("TYPEID", type.getId())
+               .executeUpdate();
+   }
+
+   public Image getHighlightImage(String type) throws Exception
+   {
+      try
+      {
+         Image i = (Image) getEm()
+                  .createNativeQuery(
+                           "select * from " + Image.TABLE_NAME + " where id = ( "
+                                    + "    select " + RichContent.IMAGE_FK + " from "
+                                    + RichContent.IMAGES_JOINTABLE_NAME
+                                    + " where " + RichContent.TABLE_FK + " = ( "
+                                    + "       select id from " + RichContent.TABLE_NAME
+                                    + " where highlight = :TRUE and richContentType_id = ("
+                                    + "          select id from " + RichContentType.TABLE_NAME
+                                    + " where name = :TYPENAME "
+                                    + "       ) "
+                                    + "    ) "
+                                    + " ) ", Image.class)
+                  .setParameter("TRUE", true).setParameter("TYPENAME", type).getSingleResult();
+         return i;
+      }
+      catch (NoResultException e)
+      {
+         return null;
+      }
+   }
+
+   @Override
+   protected void applyRestrictions(Search<RichContent> search, String alias, String separator, StringBuffer sb,
+            Map<String, Object> params) throws Exception
    {
 
       // ACTIVE TYPE
       if (true)
       {
-         sb.append(separator).append(richContentTypeAlias).append(".active = :activeContentType ");
-         params.put("activeContentType", true);
+         sb.append(separator).append(alias).append(".richContentType.active = :typeActive ");
+         params.put("typeActive", true);
          separator = " and ";
       }
 
       // FROM
       if (search.getFrom() != null && search.getFrom().getDate() != null)
       {
-         sb.append(separator).append(richContentTypeAlias).append(".date >= :FROMDATE ");
-         params.put("FROMDATE", search.getFrom().getDate());
+         sb.append(separator).append(alias).append(".date >= :FROMDATE ");
+         params.put("FROMDATE", DateUtils.toBeginOfDay(search.getFrom().getDate()));
          separator = " and ";
       }
       // TO
       if (search.getTo() != null && search.getTo().getDate() != null)
       {
-         sb.append(separator).append(richContentTypeAlias).append(".date <= :TODATE ");
-         params.put("TODATE", search.getTo().getDate());
+         sb.append(separator).append(alias).append(".date <= :TODATE ");
+         params.put("TODATE", DateUtils.toEndOfDay(search.getTo().getDate()));
          separator = " and ";
       }
 
       // HIGHLIGHT
       if (search.getObj().isHighlight())
       {
-         sb.append(separator).append(richContentAlias).append(".highlight = :HIGHLIGHT ");
+         sb.append(separator).append(alias).append(".highlight = :HIGHLIGHT ");
          params.put("HIGHLIGHT", search.getObj().isHighlight());
          separator = " and ";
       }
@@ -407,43 +234,24 @@ public class RichContentRepository extends AbstractPageRepository<RichContent>
       // TYPE BY NAME
       if (search.getObj().getRichContentType() != null
                && search.getObj().getRichContentType().getName() != null
-               && search.getObj().getRichContentType().getName().length() > 0)
+               && search.getObj().getRichContentType().getName().trim().length() > 0)
       {
-         if (search.getObj().getRichContentType().getName().contains(","))
+         String[] names = search.getObj().getRichContentType().getName().split(",");
+         Set<String> contentTypeNames = new HashSet<String>();
+         for (String name : names)
          {
-            String[] names = search.getObj().getRichContentType().getName().split(",");
-            StringBuffer orBuffer = new StringBuffer();
-            String orSeparator = "";
-            for (int i = 0; i < names.length; i++)
-            {
-               if (names[i].trim().length() > 0)
-               {
-                  orBuffer.append(orSeparator).append(richContentTypeAlias).append(".name = :NAMETYPE" + i + " ");
-                  params.put("NAMETYPE" + i, names[i].trim());
-                  orSeparator = " or ";
-               }
-            }
-            if (orBuffer.length() > 0)
-            {
-               sb.append(separator).append(" ( ").append(orBuffer).append(" ) ");
-               separator = " and ";
-            }
+            contentTypeNames.add(name.trim());
          }
-         else
-         {
-            sb.append(separator).append(richContentTypeAlias).append(".name = :NAMETYPE ");
-            params.put("NAMETYPE", search.getObj().getRichContentType()
-                     .getName());
-            separator = " and ";
-         }
-
+         sb.append(separator).append(alias).append(".richContentType.name in ( :typeNames ) ");
+         params.put("typeNames", contentTypeNames);
+         separator = " and ";
       }
 
       // AUTHOR
-      if (search.getObj().getAuthor() != null && search.getObj().getAuthor().trim().length() > 0)
+      if (search.getLike().getAuthor() != null && search.getLike().getAuthor().trim().length() > 0)
       {
-         sb.append(separator).append(" upper ( ").append(richContentAlias).append(".author ) LIKE :AUTHOR ");
-         params.put("AUTHOR", likeParam(search.getObj().getAuthor().trim().toUpperCase()));
+         sb.append(separator).append(" upper ( ").append(alias).append(".author ) LIKE :AUTHOR ");
+         params.put("AUTHOR", likeParam(search.getLike().getAuthor().trim().toUpperCase()));
          separator = " and ";
       }
 
@@ -451,8 +259,8 @@ public class RichContentRepository extends AbstractPageRepository<RichContent>
       if (search.getObj().getRichContentType() != null
                && search.getObj().getRichContentType().getId() != null)
       {
-         sb.append(separator).append(richContentTypeAlias).append(".id = :IDTYPE ");
-         params.put("IDTYPE", search.getObj().getRichContentType().getId());
+         sb.append(separator).append(alias).append(".richContentType.id = :typeId ");
+         params.put("typeId", search.getObj().getRichContentType().getId());
          separator = " and ";
       }
 
@@ -460,61 +268,49 @@ public class RichContentRepository extends AbstractPageRepository<RichContent>
       if (search.getObj().getTag() != null
                && search.getObj().getTag().trim().length() > 0)
       {
+         String tagName = search.getObj().getTag().trim();
+
+         // TODO better - this is a hack to overcome strange characters in the search form fields (i.e.: Forlì)
+         String tagNameCleaned = StringUtils.clean(
+                  search.getObj().getTag().trim()).replace('-', ' ');
+         Boolean likeMatch = null;
+         if (!tagName.equals(tagNameCleaned))
          {
-            String tagName = search.getObj().getTag().trim();
-
-            // TODO better - this is a hack to overcome strange characters in the search form fields (i.e.: Forlì)
-            String tagNameCleaned = StringUtils.clean(
-                     search.getObj().getTag().trim()).replace('-', ' ');
-            Boolean likeMatch = null;
-            if (!tagName.equals(tagNameCleaned))
-            {
-               // if tagName and tagNameCleaned are not the same we perform like-match with tagNameCleaned, to prevent
-               // no-results
-               likeMatch = true;
-            }
-            else
-            {
-               // otherwise we can do perfect-match with the original tagName
-               likeMatch = false;
-            }
-
-            sb.append(separator).append(richContentAlias).append(".id in ( ");
-            sb.append(" select distinct T1.richContent_id from ")
-                     .append(Tag.TABLE_NAME)
-                     .append(" T1 where T1.tagName ")
-                     .append(likeMatch ? "like" : "=").append(" :TAGNAME ");
-            sb.append(" ) ");
-            params.put("TAGNAME", likeMatch ? likeParam(tagNameCleaned)
-                     : tagName);
-            separator = " and ";
+            // if tagName and tagNameCleaned are not the same we perform like-match with tagNameCleaned, to prevent
+            // no-results
+            likeMatch = true;
          }
+         else
+         {
+            // otherwise we can do perfect-match with the original tagName
+            likeMatch = false;
+         }
+
+         sb.append(separator).append(alias).append(".id in ( ");
+         sb.append(" select T1.richContentId from ")
+                  .append(Tag.class.getSimpleName())
+                  .append(" T1 where T1.tagName ")
+                  .append(likeMatch ? "like" : "=").append(" :TAGNAME ");
+         sb.append(" ) ");
+         params.put("TAGNAME", likeMatch ? likeParam(tagNameCleaned.trim())
+                  : tagName);
+         separator = " and ";
       }
 
       // TAG LIKE
-      if (search.getObj().getTagList().size() > 0)
+      if (search.getLike().getTagList().size() > 0)
       {
          sb.append(separator).append(" ( ");
-         for (int i = 0; i < search.getObj().getTagList().size(); i++)
+         for (int i = 0; i < search.getLike().getTagList().size(); i++)
          {
             sb.append(i > 0 ? " or " : "");
 
-            // TODO benchmark - try which version runs faster
-            boolean useJoin = false;
-            if (useJoin)
-            {
-               sb.append(richContentAlias).append(".id in ( ");
-               sb.append(" select distinct T2.richContent_id from ")
-                        .append(Tag.TABLE_NAME)
-                        .append(" T2 where upper ( T2.tagName ) like :TAGNAME")
-                        .append(i).append(" ");
-               sb.append(" ) ");
-            }
-            else
-            {
-               sb.append(" upper ( ").append(richContentAlias).append(".tags ) like :TAGNAME").append(i)
-                        .append(" ");
-            }
+            sb.append(alias).append(".id in ( ");
+            sb.append(" select T2.richContentId from ")
+                     .append(Tag.class.getSimpleName())
+                     .append(" T2 where upper ( T2.tagName ) like :TAGNAME")
+                     .append(i).append(" ");
+            sb.append(" ) ");
 
             // params.put("TAGNAME" + i, likeParam(search.getObj().getTag()
             // .trim().toUpperCase()));
@@ -526,328 +322,70 @@ public class RichContentRepository extends AbstractPageRepository<RichContent>
          separator = " and ";
       }
 
-      // TITLE --> ALSO SEARCH IN CUSTOM FIELDS
-      String customLike = null;
-      if (search.getObj().getTitle() != null
-               && !search.getObj().getTitle().trim().isEmpty())
+      // TITLE
+      if (search.getLike().getTitle() != null
+               && !search.getLike().getTitle().trim().isEmpty())
       {
-         customLike = "upper ( " + richContentAlias + ".content ) like :LIKETEXTCUSTOM ";
-         params.put("LIKETEXTCUSTOM", likeParam(search.getObj().getTitle().trim().toUpperCase()));
+         sb.append(separator).append(" upper ( ").append(alias).append(".title ) like :likeTitle ");
+         params.put("likeTitle", likeParam(search.getLike().getTitle().trim().toUpperCase()));
+         separator = " and ";
       }
-      super.applyRestrictionsNative(search, pageAlias, separator, sb, params, customLike);
 
-   }
-
-   /**
-    * // we select a cartesian product of master/details rows in case of count = false
-    * sb.append(pageAlias).append(".id, "); sb.append(pageAlias).append(".lang1id, ");
-    * sb.append(pageAlias).append(".lang2id, "); sb.append(pageAlias).append(".lang3id, ");
-    * sb.append(pageAlias).append(".lang4id, "); sb.append(pageAlias).append(".lang5id, ");
-    * sb.append(pageAlias).append(".clone, "); sb.append(pageAlias).append(".title, ");
-    * sb.append(pageAlias).append(".description, "); sb.append(templateImplAlias).append(".id, ");
-    * sb.append(templateImplAlias).append(".mainPageId, "); sb.append(templateImplAlias).append(".mainPageTitle, ");
-    * sb.append(richContentAlias).append(".author, "); sb.append(richContentAlias).append(".content, ");
-    * sb.append(richContentAlias).append(".date, "); sb.append(richContentAlias).append(".highlight, ");
-    * sb.append(richContentAlias).append(".preview, "); sb.append(richContentAlias).append(".tags,  ");
-    * sb.append(richContentAlias).append(".richContentType_id, ");
-    * sb.append(richContentTypeAlias).append(".name AS richContentType, ");
-    * sb.append(imageAlias).append(".id AS imageId, "); sb.append(imageAlias).append(".fileName AS image");
-    * sb.append(documentAlias).append(".id AS documentId, ");
-    * sb.append(documentAlias).append(".fileName AS document ");*
-    * 
-    * @param resultList
-    * @return
-    */
-   @SuppressWarnings({ "rawtypes", "unchecked" })
-   protected List<RichContent> extract(List resultList, boolean completeFetch)
-   {
-      RichContent richContent = null;
-      Map<String, Map<Long, Image>> images = new LinkedHashMap<String, Map<Long, Image>>();
-      Map<String, Map<Long, Document>> documents = new LinkedHashMap<String, Map<Long, Document>>();
-      Map<String, RichContent> richContents = new LinkedHashMap<String, RichContent>();
-
-      Iterator<Object[]> results = resultList.iterator();
-      while (results.hasNext())
+      // CONTENT (ALSO SEARCHES IN TITLE)
+      if (search.getLike().getContent() != null
+               && !search.getLike().getContent().trim().isEmpty())
       {
-         richContent = new RichContent();
-         Object[] row = results.next();
-         int i = 0;
-         String id = (String) row[i];
-         // if (id != null && !id.isEmpty())
-         richContent.setId(id);
-         i++;
-         String lang1id = (String) row[i];
-         richContent.setLang1id(lang1id);
-         i++;
-         String lang2id = (String) row[i];
-         richContent.setLang2id(lang2id);
-         i++;
-         String lang3id = (String) row[i];
-         richContent.setLang3id(lang3id);
-         i++;
-         String lang4id = (String) row[i];
-         richContent.setLang4id(lang4id);
-         i++;
-         String lang5id = (String) row[i];
-         richContent.setLang5id(lang5id);
-         i++;
-         Object clone = row[i];
-         if (clone != null)
-         {
-            if (clone instanceof Boolean)
-            {
-               richContent.setClone(((Boolean) clone).booleanValue());
-            }
-            else if (clone instanceof Short)
-            {
-               richContent.setClone(((Short) clone).intValue() > 0 ? true : false);
-            }
-            else
-            {
-               logger.error("clone instance of " + clone.getClass().getCanonicalName());
-            }
-         }
-         else
-         {
-            logger.error("clone should not be null");
-         }
-         i++;
-         String title = (String) row[i];
-         // if (title != null && !title.isEmpty())
-         richContent.setTitle(title);
-         i++;
-         String description = (String) row[i];
-         // if (description != null && !description.isEmpty())
-         richContent.setDescription(description);
-         i++;
-         Object template_impl_id = row[i];
-         if (template_impl_id != null)
-         {
-            if (template_impl_id instanceof BigInteger)
-            {
-               richContent.getTemplate().setId(((BigInteger) template_impl_id).longValue());
-               richContent.setTemplateId(((BigInteger) template_impl_id).longValue());
-            }
-            else
-            {
-               logger.error("templateImpl_id instance of " + template_impl_id.getClass().getCanonicalName());
-            }
-         }
-         else
-         {
-            logger.error("templateImpl_id should not be null");
-         }
-         i++;
-         String mainPageId = (String) row[i];
-         richContent.getTemplate().setMainPageId(mainPageId);
-         i++;
-         String mainPageTitle = (String) row[i];
-         richContent.getTemplate().setMainPageTitle(mainPageTitle);
-         i++;
-         String author = (String) row[i];
-         // if (author != null && !author.isEmpty())
-         richContent.setAuthor(author);
-         i++;
-         String content = (String) row[i];
-         // if (content != null && !content.isEmpty())
-         richContent.setContent(content);
-         i++;
-         Timestamp date = (Timestamp) row[i];
-         if (date != null)
-         {
-            richContent.setDate(new Date(date.getTime()));
-         }
-         i++;
-         Object hightlight = row[i];
-         if (hightlight != null)
-         {
-            if (hightlight instanceof Short)
-            {
-               richContent.setHighlight(((Short) hightlight) > 0 ? true : false);
-            }
-            else if (hightlight instanceof Boolean)
-            {
-               richContent.setHighlight(((Boolean) hightlight).booleanValue());
-            }
-            else
-            {
-               logger.error("hightlight instance of " + hightlight.getClass().getCanonicalName());
-            }
-         }
-         i++;
-         String preview = (String) row[i];
-         // if (preview != null && !preview.isEmpty())
-         richContent.setPreview(preview);
-         i++;
-         String tags = (String) row[i];
-         // if (tags != null && !tags.isEmpty())
-         richContent.setTags(tags);
-         i++;
-         Object richContentType_id = row[i];
-         if (richContentType_id != null)
-         {
-            if (richContentType_id instanceof BigInteger)
-            {
-               richContent.getRichContentType().setId(((BigInteger) richContentType_id).longValue());
-            }
-            else
-            {
-               logger.error("richContentType_id instance of " + richContentType_id.getClass().getCanonicalName());
-            }
-         }
-         else
-         {
-            logger.error("richContentType_id should not be null");
-         }
-         i++;
-         String richContentType = (String) row[i];
-         if (richContentType != null && !richContentType.isEmpty())
-            richContent.getRichContentType().setName(richContentType);
-         i++;
-         Image image = null;
-         Object imageId = row[i];
-         if (imageId != null)
-         {
-            if (imageId instanceof BigInteger)
-            {
-               image = new Image();
-               image.setId(((BigInteger) imageId).longValue());
-            }
-            else
-            {
-               logger.error("imageId instance of " + imageId.getClass().getCanonicalName());
-            }
-         }
-         i++;
-         String imagefileName = (String) row[i];
-         if (image != null && imagefileName != null && !imagefileName.isEmpty())
-         {
-            image.setFilename(imagefileName);
-            if (images.containsKey(id))
-            {
-               Map<Long, Image> map = images.get(id);
-               map.put(image.getId()
-                        , image);
-            }
-            else
-            {
-               Map<Long, Image> map = new LinkedHashMap<Long, Image>();
-               map.put(image.getId(), image);
-               images.put(id, map);
-            }
-         }
-         i++;
-         Document document = null;
-         Object documentId = row[i];
-         if (documentId != null)
-         {
-            if (documentId instanceof BigInteger)
-            {
-               document = new Document();
-               document.setId(((BigInteger) documentId).longValue());
-            }
-            else
-            {
-               logger.error("documentId instance of " + documentId.getClass().getCanonicalName());
-            }
-         }
-         i++;
-         String documentfileName = (String) row[i];
-         if (document != null && documentfileName != null && !documentfileName.isEmpty())
-         {
-            document.setFilename(documentfileName);
-            if (documents.containsKey(id))
-            {
-               Map<Long, Document> map = documents.get(id);
-               map.put(document.getId(), document);
-            }
-            else
-            {
-               Map<Long, Document> map = new LinkedHashMap<Long, Document>();
-               map.put(document.getId(), document);
-               documents.put(id, map);
-            }
-         }
-         i++;
-         if (completeFetch)
-         {
-            // extract additional fields
-         }
-         if (!richContents.containsKey(id))
-         {
-            richContents.put(id, richContent);
-         }
-
+         sb.append(separator);
+         sb.append(" ( ");
+         sb.append(" upper ( ").append(alias).append(".title ) like :likeContent ");
+         sb.append(" or ");
+         sb.append(" upper ( ").append(alias).append(".content ) like :likeContent ");
+         params.put("likeContent", likeParam(search.getLike().getContent().trim().toUpperCase()));
+         separator = " and ";
       }
-      for (String id : documents.keySet())
-      {
-         RichContent rich = null;
-         if (richContents.containsKey(id))
-         {
-            rich = richContents.get(id);
-            Map<Long, Document> docs = documents.get(id);
-            if (docs != null)
-            {
-               for (Long docId : docs.keySet())
-               {
-                  rich.addDocument(docs.get(docId));
-               }
-            }
-         }
-         else
-         {
-            logger.error("ERROR - DOCS CYCLE cannot find id:" + id);
-         }
 
-      }
-      for (String id : images.keySet())
-      {
-         RichContent rich = null;
-         if (richContents.containsKey(id))
-         {
-            rich = richContents.get(id);
-            Map<Long, Image> imgs = images.get(id);
-            if (imgs != null)
-            {
-               for (Long imgId : imgs.keySet())
-               {
-                  rich.addImage(imgs.get(imgId));
-               }
-            }
-         }
-         else
-         {
-            logger.error("ERROR - IMGS CYCLE cannot find id:" + id);
-         }
+      super.applyRestrictions(search, alias, separator, sb, params);
 
-      }
-      return new ArrayList<RichContent>(richContents.values());
    }
 
    @Override
-   public boolean destroy(RichContent t)
+   public void delete(Object key) throws Exception
    {
-      try
-      {
-         getEm().createNativeQuery(
-                  "delete from " + RichContent.TABLE_NAME + "_" + Image.TABLE_NAME + " where "
-                           + RichContent.class.getSimpleName() + "_id = :ID ")
-                  .setParameter("ID", t.getId()).executeUpdate();
-         getEm().createNativeQuery(
-                  "delete from " + RichContent.TABLE_NAME + "_" + Document.TABLE_NAME + " where "
-                           + RichContent.class.getSimpleName() + "_id = :ID ")
-                  .setParameter("ID", t.getId()).executeUpdate();
-         getEm().createNativeQuery("delete from " + RichContent.TABLE_NAME + " where id = :ID ")
-                  .setParameter("ID", t.getId())
-                  .executeUpdate();
-         getEm().createNativeQuery("delete from " + Page.TABLE_NAME + " where id = :ID ").setParameter("ID", t.getId())
-                  .executeUpdate();
-         return true;
-      }
-      catch (Exception e)
-      {
-         logger.error(e.getMessage(), e);
-         return false;
-      }
+      getEm().createNativeQuery("update " + RichContent.TABLE_NAME + " set active = :active where id = :id")
+               .setParameter("active", false).setParameter("id", key).executeUpdate();
+   }
+
+   public void addImage(String richContentId, Long imageId)
+   {
+      getEm().createNativeQuery(
+               "INSERT INTO " + RichContent.IMAGES_JOINTABLE_NAME + "(" + RichContent.TABLE_FK + ", "
+                        + RichContent.IMAGE_FK + ") VALUES (:richContentId,:imageId) ")
+               .setParameter("richContentId", richContentId).setParameter("imageId", imageId).executeUpdate();
+   }
+
+   public void addDocument(String richContentId, Long documentId)
+   {
+      getEm().createNativeQuery(
+               "INSERT INTO " + RichContent.DOCUMENTS_JOINTABLE_NAME + "(" + RichContent.TABLE_FK + ", "
+                        + RichContent.DOCUMENT_FK + ") VALUES (:richContentId,:documentId) ")
+               .setParameter("richContentId", richContentId).setParameter("documentId", documentId).executeUpdate();
+   }
+
+   public void removeDocument(String richContentId, Long documentId)
+   {
+      getEm().createNativeQuery(
+               "DELETE FROM " + RichContent.DOCUMENTS_JOINTABLE_NAME + " where " + RichContent.TABLE_FK
+                        + " = :richContentId and "
+                        + RichContent.DOCUMENT_FK + " = :documentId ")
+               .setParameter("richContentId", richContentId).setParameter("documentId", documentId).executeUpdate();
+   }
+
+   public void removeImage(String richContentId, Long imageId)
+   {
+      getEm().createNativeQuery(
+               "DELETE FROM " + RichContent.IMAGES_JOINTABLE_NAME + " where " + RichContent.TABLE_FK
+                        + " = :richContentId and "
+                        + RichContent.IMAGE_FK + " = :imageId ")
+               .setParameter("richContentId", richContentId).setParameter("imageId", imageId).executeUpdate();
    }
 }

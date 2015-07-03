@@ -1,53 +1,40 @@
-/*
- * Copyright 213 GiavaCms.org.
- *
- * Licensed under the Eclipse Public License version 1.0, available at
- * http://www.eclipse.org/legal/epl-v10.html
- */
 package org.giavacms.catalogue.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.giavacms.base.model.attachment.Document;
+import org.giavacms.base.model.attachment.Image;
+
+import javax.persistence.*;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-
-import org.giavacms.base.model.Page;
-import org.giavacms.base.model.attachment.Document;
-import org.giavacms.base.model.attachment.Image;
-
 @Entity
-@DiscriminatorValue(value = Product.EXTENSION)
 @Table(name = Product.TABLE_NAME)
-public class Product extends Page implements Serializable
+@XmlRootElement
+public class Product implements Serializable
 {
 
    private static final long serialVersionUID = 1L;
-   public static final String EXTENSION = "Product";
    public static final String TABLE_NAME = "Product";
+   public static final String TABLE_FK = "Product_id";
+   public static final String DOCUMENTS_JOINTABLE_NAME = "Product_Document";
+   public static final String DOCUMENT_FK = "documents_id";
+   public static final String IMAGES_JOINTABLE_NAME = "Product_Image";
+   public static final String IMAGE_FK = "images_id";
    public static final boolean HAS_DETAILS = true;
 
    public Product()
    {
       super();
-      super.setExtension(EXTENSION);
    }
 
-   // private Long id --> super.id;
-   // private String name --> super.title;
-   // private String description --> super.description;
+   private String id;
+   private String name;
+   private String description;
+   boolean active = true;
 
    private String preview;
    private Category category;
@@ -68,22 +55,31 @@ public class Product extends Page implements Serializable
    private String val8;
    private String val9;
    private String val10;
+   private String language;
 
    private Map<String, String[]> vals = null;
 
    // private boolean active = true; --> super.active
 
-   @Transient
-   @Deprecated
-   public String getName()
+   @Id
+   public String getId()
    {
-      return super.getTitle();
+      return id;
    }
 
-   @Deprecated
-   public void setName(String name)
+   public void setId(String id)
    {
-      super.setTitle(name);
+      this.id = id;
+   }
+
+   public String getLanguage()
+   {
+      return language;
+   }
+
+   public void setLanguage(String language)
+   {
+      this.language = language;
    }
 
    @Lob
@@ -111,8 +107,9 @@ public class Product extends Page implements Serializable
       this.category = category;
    }
 
+   @JsonIgnore
    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-   @JoinTable(name = "Product_Document", joinColumns = @JoinColumn(name = "Product_id"), inverseJoinColumns = @JoinColumn(name = "documents_id"))
+   @JoinTable(name = DOCUMENTS_JOINTABLE_NAME, joinColumns = @JoinColumn(name = TABLE_FK), inverseJoinColumns = @JoinColumn(name = DOCUMENT_FK))
    public List<Document> getDocuments()
    {
       if (this.documents == null)
@@ -131,12 +128,14 @@ public class Product extends Page implements Serializable
    }
 
    @Transient
+   @JsonIgnore
    public int getDocSize()
    {
       return getDocuments().size();
    }
 
    @Transient
+   @JsonIgnore
    public Image getImage()
    {
       if (getImages() != null && getImages().size() > 0)
@@ -144,8 +143,9 @@ public class Product extends Page implements Serializable
       return null;
    }
 
+   @JsonIgnore
    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-   @JoinTable(name = "Product_Image", joinColumns = @JoinColumn(name = "Product_id"), inverseJoinColumns = @JoinColumn(name = "images_id"))
+   @JoinTable(name = IMAGES_JOINTABLE_NAME, joinColumns = @JoinColumn(name = TABLE_FK), inverseJoinColumns = @JoinColumn(name = IMAGE_FK))
    public List<Image> getImages()
    {
       if (this.images == null)
@@ -164,6 +164,7 @@ public class Product extends Page implements Serializable
    }
 
    @Transient
+   @JsonIgnore
    public int getImgSize()
    {
       return getImages().size();
@@ -192,11 +193,11 @@ public class Product extends Page implements Serializable
    @Override
    public String toString()
    {
-      return "Product [id=" + super.getId() + ", title=" + super.getTitle()
+      return "Product [id=" + getId() + ", name=" + getName()
                + ", preview=" + preview + ", description="
-               + super.getDescription() + ", category=" + (category == null ? null : category.getTitle())
+               + getDescription() + ", category=" + (category == null ? null : category.getName())
                + ", dimensions=" + dimensions + ", code=" + code + ", active="
-               + super.isActive() + "]";
+               + isActive() + "]";
    }
 
    public String getPrice()
@@ -319,6 +320,8 @@ public class Product extends Page implements Serializable
       this.val10 = val10;
    }
 
+   @Transient
+   @JsonIgnore
    public String getVal(int index)
    {
       switch (index)
@@ -387,6 +390,8 @@ public class Product extends Page implements Serializable
       }
    }
 
+   @Transient
+   @JsonIgnore
    public String getProp(String prop)
    {
       if (prop == null || prop.trim().length() == 0 || category == null)
@@ -405,6 +410,8 @@ public class Product extends Page implements Serializable
       setVal(category.getPropIndex(prop), val);
    }
 
+   @Transient
+   @JsonIgnore
    public String getRef(String ref)
    {
       if (ref == null || ref.trim().length() == 0 || category == null)
@@ -424,6 +431,7 @@ public class Product extends Page implements Serializable
    }
 
    @Transient
+   @JsonIgnore
    public Map<String, String[]> getVals()
    {
       return vals;
@@ -434,4 +442,33 @@ public class Product extends Page implements Serializable
       this.vals = vals;
    }
 
+   public boolean isActive()
+   {
+      return active;
+   }
+
+   public void setActive(boolean active)
+   {
+      this.active = active;
+   }
+
+   public String getName()
+   {
+      return name;
+   }
+
+   public void setName(String name)
+   {
+      this.name = name;
+   }
+
+   public String getDescription()
+   {
+      return description;
+   }
+
+   public void setDescription(String description)
+   {
+      this.description = description;
+   }
 }

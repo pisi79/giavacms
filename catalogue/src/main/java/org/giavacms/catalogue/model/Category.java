@@ -1,46 +1,34 @@
-/*
- * Copyright 213 GiavaCms.org.
- *
- * Licensed under the Eclipse Public License version 1.0, available at
- * http://www.eclipse.org/legal/epl-v10.html
- */
 package org.giavacms.catalogue.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import javax.persistence.*;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
-import javax.persistence.OrderBy;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-
-import org.giavacms.base.model.Page;
-
 @Entity
-@DiscriminatorValue(value = Category.EXTENSION)
 @Table(name = Category.TABLE_NAME)
-public class Category extends Page implements Serializable
+@XmlRootElement
+public class Category implements Serializable
 {
 
    private static final long serialVersionUID = 1L;
-   public static final String EXTENSION = "Category";
    public static final String TABLE_NAME = "Category";
    public static final boolean HAS_DETAILS = true;
 
    public Category()
    {
       super();
-      super.setExtension(EXTENSION);
    }
 
    private List<Product> products;
-   // name --> super.title
-   // description --> super.description
-   // active --> active;
+
+   private String id;
+   private String name;
+   private String description;
+   boolean active = true;
    private int orderNum;
 
    private String prop1;
@@ -64,22 +52,52 @@ public class Category extends Page implements Serializable
    private String ref8;
    private String ref9;
    private String ref10;
+   private String language;
 
-   @Transient
-   @Deprecated
+   @Id
+   public String getId()
+   {
+      return id;
+   }
+
+   public void setId(String id)
+   {
+      this.id = id;
+   }
+
    public String getName()
    {
-      return super.getTitle();
+      return name;
    }
 
-   @Deprecated
    public void setName(String name)
    {
-      super.setTitle(name);
+      this.name = name;
    }
 
+   public String getDescription()
+   {
+      return description;
+   }
+
+   public void setDescription(String description)
+   {
+      this.description = description;
+   }
+
+   public String getLanguage()
+   {
+      return language;
+   }
+
+   public void setLanguage(String language)
+   {
+      this.language = language;
+   }
+
+   @JsonIgnore
    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
-   @OrderBy("title")
+   @OrderBy("name")
    public List<Product> getProducts()
    {
       if (products == null)
@@ -95,14 +113,6 @@ public class Category extends Page implements Serializable
    public void addProduct(Product product)
    {
       getProducts().add(product);
-   }
-
-   @Override
-   public String toString()
-   {
-      return "Category [id=" + super.getId() + ", title=" + super.getTitle()
-               + ", description=" + super.getDescription() + ", active="
-               + super.isActive() + "]";
    }
 
    public int getOrderNum()
@@ -315,6 +325,8 @@ public class Category extends Page implements Serializable
       this.ref10 = ref10;
    }
 
+   @Transient
+   @JsonIgnore
    public String getProp(int index)
    {
       switch (index)
@@ -344,6 +356,8 @@ public class Category extends Page implements Serializable
       }
    }
 
+   @Transient
+   @JsonIgnore
    public String getRef(int index)
    {
       switch (index)
@@ -373,6 +387,8 @@ public class Category extends Page implements Serializable
       }
    }
 
+   @Transient
+   @JsonIgnore
    public int getPropIndex(String prop)
    {
       if (prop == null)
@@ -389,6 +405,8 @@ public class Category extends Page implements Serializable
       return -1;
    }
 
+   @Transient
+   @JsonIgnore
    public int getRefIndex(String ref)
    {
       if (ref == null)
@@ -484,6 +502,7 @@ public class Category extends Page implements Serializable
    }
 
    @Transient
+   @JsonIgnore
    public List<String> getProps()
    {
       List<String> props = new ArrayList<String>();
@@ -493,7 +512,9 @@ public class Category extends Page implements Serializable
       }
       return props;
    }
+
    @Transient
+   @JsonIgnore
    public List<String> getRefs()
    {
       List<String> refs = new ArrayList<String>();
@@ -502,5 +523,23 @@ public class Category extends Page implements Serializable
          refs.add(getRef(r));
       }
       return refs;
+   }
+
+   public boolean isActive()
+   {
+      return active;
+   }
+
+   public void setActive(boolean active)
+   {
+      this.active = active;
+   }
+
+   @Override
+   public String toString()
+   {
+      return "Category [id=" + getId() + ", name=" + getName()
+               + ", description=" + getDescription() + ", active="
+               + isActive() + "]";
    }
 }

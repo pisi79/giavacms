@@ -1,6 +1,8 @@
 package org.giavacms.richcontent.repository;
 
-import java.util.Map;
+import org.giavacms.api.model.Search;
+import org.giavacms.api.repository.AbstractRepository;
+import org.giavacms.richcontent.model.RichContentType;
 
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
@@ -8,10 +10,7 @@ import javax.inject.Named;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-import org.giavacms.common.annotation.LogOperation;
-import org.giavacms.common.model.Search;
-import org.giavacms.common.repository.AbstractRepository;
-import org.giavacms.richcontent.model.type.RichContentType;
+import java.util.Map;
 
 @Named
 @Stateless
@@ -59,24 +58,15 @@ public class RichContentTypeRepository extends AbstractRepository<RichContentTyp
       }
    }
 
-   @Override
-   public boolean delete(Object key)
+   @Override public void delete(Object key) throws Exception
    {
-      try
+      RichContentType richContentType = getEm().find(getEntityType(), key);
+      if (richContentType != null)
       {
-         RichContentType richContentType = getEm().find(getEntityType(), key);
-         if (richContentType != null)
-         {
-            richContentType.setActive(false);
-            getEm().merge(richContentType);
-         }
-         return true;
-      }
-      catch (Exception e)
-      {
-         logger.error(e.getMessage());
-         return false;
+         richContentType.setActive(false);
+         getEm().merge(richContentType);
       }
    }
+
 
 }

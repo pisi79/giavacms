@@ -1,39 +1,34 @@
 package org.giavacms.richcontent.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.giavacms.api.annotation.Active;
+import org.giavacms.base.model.attachment.Document;
+import org.giavacms.base.model.attachment.Image;
+
+import javax.persistence.*;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-
-import org.giavacms.base.common.util.HtmlUtils;
-import org.giavacms.base.model.Page;
-import org.giavacms.base.model.attachment.Document;
-import org.giavacms.base.model.attachment.Image;
-import org.giavacms.richcontent.model.type.RichContentType;
-
 @Entity
-@DiscriminatorValue(value = RichContent.EXTENSION)
 @Table(name = RichContent.TABLE_NAME)
-public class RichContent extends Page
+@XmlRootElement
+public class RichContent implements Serializable
 {
 
    private static final long serialVersionUID = 1L;
-   public static final String EXTENSION = "RichContent";
    public static final String TABLE_NAME = "RichContent";
-   private static final String TAG_SEPARATOR = ",";
-   public static final boolean HAS_DETAILS = true;
+   public static final String TABLE_FK = "RichContent_id";
+   public static final String DOCUMENTS_JOINTABLE_NAME = "RichContent_Document";
+   public static final String DOCUMENT_FK = "documents_id";
+   public static final String IMAGES_JOINTABLE_NAME = "RichContent_Image";
+   public static final String IMAGE_FK = "images_id";
+   public static final String TAG_SEPARATOR = ",";
 
+   private String id;
+   private String title;
    private String preview;
    private String content;
    private String author;
@@ -45,21 +40,38 @@ public class RichContent extends Page
    private String tag;
    private List<String> tagList;
    private String tags;
+   boolean active = true;
+   private String language;
 
    public RichContent()
    {
       super();
-      super.setExtension(EXTENSION);
    }
 
-   @Transient
-   public String getContentN()
+   @Id
+   public String getId()
    {
-      return HtmlUtils.normalizeHtml(this.content);
+      return id;
    }
 
+   public void setId(String id)
+   {
+      this.id = id;
+   }
+
+   public String getLanguage()
+   {
+      return language;
+   }
+
+   public void setLanguage(String language)
+   {
+      this.language = language;
+   }
+
+   @JsonIgnore
    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-   @JoinTable(name = "RichContent_Document", joinColumns = @JoinColumn(name = "RichContent_id"), inverseJoinColumns = @JoinColumn(name = "documents_id"))
+   @JoinTable(name = DOCUMENTS_JOINTABLE_NAME, joinColumns = @JoinColumn(name = TABLE_FK), inverseJoinColumns = @JoinColumn(name = DOCUMENT_FK))
    public List<Document> getDocuments()
    {
       if (this.documents == null)
@@ -78,13 +90,15 @@ public class RichContent extends Page
    }
 
    @Transient
+   @JsonIgnore
    public int getDocSize()
    {
       return getDocuments().size();
    }
 
+   @JsonIgnore
    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-   @JoinTable(name = "RichContent_Image", joinColumns = @JoinColumn(name = "RichContent_id"), inverseJoinColumns = @JoinColumn(name = "images_id"))
+   @JoinTable(name = IMAGES_JOINTABLE_NAME, joinColumns = @JoinColumn(name = TABLE_FK), inverseJoinColumns = @JoinColumn(name = IMAGE_FK))
    public List<Image> getImages()
    {
       if (this.images == null)
@@ -93,6 +107,7 @@ public class RichContent extends Page
    }
 
    @Transient
+   @JsonIgnore
    public Image getImage()
    {
       if (getImages() != null && getImages().size() > 0)
@@ -111,6 +126,7 @@ public class RichContent extends Page
    }
 
    @Transient
+   @JsonIgnore
    public int getImgSize()
    {
       return getImages().size();
@@ -181,16 +197,6 @@ public class RichContent extends Page
       this.date = date;
    }
 
-   @Override
-   public String toString()
-   {
-      return "RichContent [id=" + super.getId() + ", active="
-               + super.isActive() + ", title=" + super.getTitle()
-               + ", preview=" + preview + ", content=" + content + ", author="
-               + author + ", date=" + date + ", tags=" + tags + ", richContentType="
-               + richContentType.getName() + ", highlight=" + highlight + "]";
-   }
-
    public String getTags()
    {
       return tags;
@@ -202,7 +208,29 @@ public class RichContent extends Page
       this.tagList = null;
    }
 
+   public String getTitle()
+   {
+      return title;
+   }
+
+   public void setTitle(String title)
+   {
+      this.title = title;
+   }
+
+   @Active
+   public boolean isActive()
+   {
+      return active;
+   }
+
+   public void setActive(boolean active)
+   {
+      this.active = active;
+   }
+
    @Transient
+   @JsonIgnore
    public String getTag()
    {
       return tag;
@@ -214,6 +242,7 @@ public class RichContent extends Page
    }
 
    @Transient
+   @JsonIgnore
    public List<String> getTagList()
    {
       if (tagList != null)
@@ -236,10 +265,25 @@ public class RichContent extends Page
       return tagList;
    }
 
-   @Transient
-   public Image getFirstImage()
+   @Override
+   public String toString()
    {
-      return images == null ? null : images.size() == 0 ? null : images.get(0);
+      return "RichContent{" +
+               "id='" + id + '\'' +
+               ", title='" + title + '\'' +
+               ", preview='" + preview + '\'' +
+               ", content='" + content + '\'' +
+               ", author='" + author + '\'' +
+               ", date=" + date +
+               ", richContentType=" + richContentType +
+               ", documents=" + documents +
+               ", images=" + images +
+               ", highlight=" + highlight +
+               ", tag='" + tag + '\'' +
+               ", tagList=" + tagList +
+               ", tags='" + tags + '\'' +
+               ", active=" + active +
+               ", language='" + language + '\'' +
+               '}';
    }
-
 }

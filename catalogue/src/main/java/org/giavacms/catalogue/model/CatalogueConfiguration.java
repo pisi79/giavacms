@@ -3,14 +3,14 @@
  *
  * Licensed under the Eclipse Public License version 1.0, available at
  * http://www.eclipse.org/legal/epl-v10.html
- */package org.giavacms.catalogue.model;
-
-import java.io.Serializable;
+ */
+package org.giavacms.catalogue.model;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import java.io.Serializable;
 
 @Entity
 public class CatalogueConfiguration implements Serializable

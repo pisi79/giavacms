@@ -6,16 +6,10 @@
  */
 package org.giavacms.base.model.attachment;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import javax.persistence.*;
 import java.io.Serializable;
-
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-
-import org.primefaces.model.UploadedFile;
 
 @Entity
 @Table(name = Document.TABLE_NAME)
@@ -33,7 +27,6 @@ public class Document implements Serializable
    private String filename;
    private byte[] data;
    private String type;
-   private UploadedFile uploadedData;
 
    @Id
    @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -78,6 +71,7 @@ public class Document implements Serializable
    }
 
    @Transient
+   @JsonIgnore
    public byte[] getData()
    {
       return data;
@@ -98,17 +92,6 @@ public class Document implements Serializable
       this.type = type;
    }
 
-   @Transient
-   public UploadedFile getUploadedData()
-   {
-      return uploadedData;
-   }
-
-   public void setUploadedData(UploadedFile uploadedData)
-   {
-      this.uploadedData = uploadedData;
-   }
-
    public boolean isActive()
    {
       return active;
@@ -120,10 +103,22 @@ public class Document implements Serializable
    }
 
    @Transient
+   @JsonIgnore
    public boolean isRemote()
    {
       return filename != null
                && (filename.toLowerCase().startsWith("http://") || filename.toLowerCase().startsWith("https://"));
    }
 
+   @Override public String toString()
+   {
+      return "Document{" +
+               "id=" + id +
+               ", active=" + active +
+               ", name='" + name + '\'' +
+               ", description='" + description + '\'' +
+               ", filename='" + filename + '\'' +
+               ", type='" + type + '\'' +
+               '}';
+   }
 }

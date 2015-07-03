@@ -1,40 +1,23 @@
 package org.giavacms.banner.repository;
 
-import java.util.List;
-import java.util.Map;
+import org.giavacms.api.model.Search;
+import org.giavacms.banner.model.Banner;
+import org.giavacms.base.model.attachment.Image;
+import org.giavacms.base.repository.BaseRepository;
 
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Named;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
-import org.giavacms.banner.model.Banner;
-import org.giavacms.common.model.Search;
-import org.giavacms.common.repository.AbstractRepository;
+import java.util.List;
+import java.util.Map;
 
 @Named
 @Stateless
 @LocalBean
-public class BannerRepository extends AbstractRepository<Banner>
+public class BannerRepository extends BaseRepository<Banner>
 {
 
    private static final long serialVersionUID = 1L;
-
-   @PersistenceContext
-   EntityManager em;
-
-   @Override
-   protected EntityManager getEm()
-   {
-      return em;
-   }
-
-   @Override
-   public void setEm(EntityManager em)
-   {
-      this.em = em;
-   }
 
    @Override
    protected String getDefaultOrderBy()
@@ -80,41 +63,48 @@ public class BannerRepository extends AbstractRepository<Banner>
       separator = " and ";
 
       // TYPOLOGY NAME
-      if (search.getObj().getBannerTypology() != null
-               && search.getObj().getBannerTypology().getName() != null
-               && search.getObj().getBannerTypology().getName().trim()
-                        .length() > 0)
+      if (search.getObj().getBannerType() != null
+               && search.getObj().getBannerType().getName() != null
+               && search.getObj().getBannerType().getName().trim()
+               .length() > 0)
       {
          sb.append(separator).append(alias)
-                  .append(".bannerTypology.name = :NAMETYP ");
-         params.put("NAMETYP", search.getObj().getBannerTypology().getName());
+                  .append(".bannerType.name = :NAMETYP ");
+         params.put("NAMETYP", search.getObj().getBannerType().getName());
       }
       // TYPOLOGY ID
-      if (search.getObj().getBannerTypology() != null
-               && search.getObj().getBannerTypology().getId() != null
-               && search.getObj().getBannerTypology().getId() > 0)
+      if (search.getObj().getBannerType() != null
+               && search.getObj().getBannerType().getId() != null
+               && search.getObj().getBannerType().getId() > 0)
       {
          sb.append(separator).append(alias)
-                  .append(".bannerTypology.id = :IDTYP ");
-         params.put("IDTYP", search.getObj().getBannerTypology().getId());
+                  .append(".bannerType.id = :IDTYP ");
+         params.put("IDTYP", search.getObj().getBannerType().getId());
       }
 
-      // NAME OR DESCRIPTION
+      // NAME
       if (search.getObj().getName() != null
-               && !search.getObj().getName().isEmpty())
+               && !search.getLike().getName().isEmpty())
       {
          sb.append(separator + " ( upper(").append(alias)
                   .append(".name) LIKE :NAMEPROD ");
-         params.put("NAMEPROD", likeParam(search.getObj().getName()
+         params.put("NAMEPROD", likeParam(search.getLike().getName()
                   .toUpperCase()));
-         sb.append(" or ").append(" upper(").append(alias)
+      }
+
+      // DESCRIPTION
+      if (search.getObj().getName() != null
+               && !search.getLike().getDescription().isEmpty())
+      {
+
+         sb.append(separator + "  upper(").append(alias)
                   .append(".description ) LIKE :DESC").append(") ");
-         params.put("DESC", likeParam(search.getObj().getName()
+         params.put("DESC", likeParam(search.getLike().getDescription()
                   .toUpperCase()));
       }
    }
 
-   public Banner getFirst()
+   public Banner getFirst() throws Exception
    {
       List<Banner> list = getList(new Search<Banner>(Banner.class), 0, 1);
       if (list != null && list.size() > 0)
@@ -122,14 +112,33 @@ public class BannerRepository extends AbstractRepository<Banner>
       return null;
    }
 
-   @SuppressWarnings("unchecked")
-   public List<Banner> getRandomByTypology(String typology, int limit)
+   public List<Banner> getRandomByTypology(String bannerType, int limit) throws Exception
    {
       return getEm()
                .createQuery(
-                        "SELECT b FROM Banner b where b.online= :ONLINE AND b.bannerTypology.name = :TIP ORDER BY RAND()")
-               .setParameter("TIP", typology).setParameter("ONLINE", true).setMaxResults(limit)
+                        "SELECT b FROM Banner b where b.online= :ONLINE AND b.bannerType.name = :TIP ORDER BY RAND()")
+               .setParameter("TIP", bannerType).setParameter("ONLINE", true).setMaxResults(limit)
                .getResultList();
    }
 
+   public void updateImage(Long bannerId, Long imageId)
+   {
+      getEm().createNativeQuery(
+               "UPDATE " + Banner.TABLE_NAME + " SET  image_id= :IMAGE_ID WHERE id = :BANNER_ID ")
+               .setParameter("BANNER_ID", bannerId).setParameter("IMAGE_ID", imageId)
+               .executeUpdate();
+   }
+
+   public Image getImage(Long bannerId) throws Exception
+   {
+      Banner banner = find(bannerId);
+      if (banner.getImage() != null && banner.getImage().getId() != null && banner.getImage().getFilename() != null
+               && !banner
+               .getImage().getFilename()
+               .isEmpty())
+      {
+         return banner.getImage();
+      }
+      return null;
+   }
 }

@@ -6,13 +6,10 @@
  */
 package org.giavacms.catalogue.model;
 
-import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
+import java.io.Serializable;
 
 @Entity
 @Table(name = Feature.TABLE_NAME)
@@ -26,15 +23,10 @@ public class Feature implements Serializable
    {
    }
 
-   // private Long id --> super.id;
-   // private String name --> super.title;
-   // private String description --> super.description;
-
    private Long id;
    private boolean active = true;
    private String name;
    private String option;
-   private String optionOnDb;
 
    @Id
    @GeneratedValue
@@ -69,6 +61,7 @@ public class Feature implements Serializable
       this.option = option;
    }
 
+   @JsonIgnore
    public boolean isActive()
    {
       return active;
@@ -77,17 +70,6 @@ public class Feature implements Serializable
    public void setActive(boolean active)
    {
       this.active = active;
-   }
-
-   @Column(name = "anOption", insertable = false, updatable = false)
-   public String getOptionOnDb()
-   {
-      return optionOnDb;
-   }
-
-   public void setOptionOnDb(String optionOnDb)
-   {
-      this.optionOnDb = optionOnDb;
    }
 
 }

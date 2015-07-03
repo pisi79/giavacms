@@ -1,36 +1,24 @@
 package org.giavacms.scenario.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.persistence.CascadeType;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.Lob;
-import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-
-import org.giavacms.base.model.Page;
 import org.giavacms.base.model.attachment.Document;
 import org.giavacms.base.model.attachment.Image;
 import org.giavacms.catalogue.model.Product;
 
+import javax.persistence.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = Scenario.TABLE_NAME)
-@DiscriminatorValue(value = Scenario.EXTENSION)
-public class Scenario extends Page
+public class Scenario implements Serializable
 {
 
    private static final long serialVersionUID = 1L;
-   public static final String EXTENSION = "Scenario";
    public static final String TABLE_NAME = "Scenario";
    public static final boolean HAS_DETAILS = true;
 
+   private String name;
    private String preview;
    private List<Product> products;
    private List<Document> documents;
@@ -39,20 +27,16 @@ public class Scenario extends Page
    public Scenario()
    {
       super();
-      super.setExtension(EXTENSION);
    }
 
-   @Transient
-   @Deprecated
    public String getName()
    {
-      return super.getTitle();
+      return name;
    }
 
-   @Deprecated
    public void setName(String name)
    {
-      super.setTitle(name);
+      setName(name);
    }
 
    @Lob
@@ -72,18 +56,6 @@ public class Scenario extends Page
       if (products == null)
          this.products = new ArrayList<Product>();
       return products;
-   }
-
-   @Transient
-   public String getProductNames()
-   {
-      StringBuffer productNames = new StringBuffer();
-      for (Product product : getProducts())
-      {
-         productNames.append("," + product.getTitle());
-      }
-      return productNames.length() > 0 ? productNames.toString().substring(1)
-               : "";
    }
 
    public void setProducts(List<Product> products)

@@ -1,39 +1,27 @@
 package org.giavacms.banner.model;
 
-import java.io.Serializable;
-
-import javax.persistence.Basic;
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-
 import org.giavacms.base.model.attachment.Image;
 
+import javax.persistence.*;
+import java.io.Serializable;
+
 @Entity
-@Table(name = "Banner")
+@Table(name = Banner.TABLE_NAME)
 public class Banner implements Serializable
 {
 
    private static final long serialVersionUID = 1L;
+   public static final String TABLE_NAME = "Banner";
 
    private Long id;
    private String name;
-   private BannerTypology bannerTypology;
+   private String language;
+   private BannerType bannerType;
    private boolean active = true;
    private String url;
    private boolean internal;
    private String description;
    private Image image;
-   private Image newImage;
    private boolean online;
 
    @Id
@@ -46,6 +34,16 @@ public class Banner implements Serializable
    public void setId(Long id)
    {
       this.id = id;
+   }
+
+   public String getLanguage()
+   {
+      return language;
+   }
+
+   public void setLanguage(String language)
+   {
+      this.language = language;
    }
 
    public String getName()
@@ -69,16 +67,16 @@ public class Banner implements Serializable
    }
 
    @ManyToOne
-   public BannerTypology getBannerTypology()
+   public BannerType getBannerType()
    {
-      if (this.bannerTypology == null)
-         this.bannerTypology = new BannerTypology();
-      return bannerTypology;
+      if (this.bannerType == null)
+         this.bannerType = new BannerType();
+      return bannerType;
    }
 
-   public void setBannerTypology(BannerTypology bannerTypology)
+   public void setBannerType(BannerType bannerType)
    {
-      this.bannerTypology = bannerTypology;
+      this.bannerType = bannerType;
    }
 
    @OneToOne(cascade = CascadeType.ALL)
@@ -93,19 +91,6 @@ public class Banner implements Serializable
    public void setImage(Image image)
    {
       this.image = image;
-   }
-
-   @Transient
-   public Image getNewImage()
-   {
-      if (newImage == null)
-         this.newImage = new Image();
-      return newImage;
-   }
-
-   public void setNewImage(Image newImage)
-   {
-      this.newImage = newImage;
    }
 
    public String getUrl()
@@ -150,4 +135,19 @@ public class Banner implements Serializable
       this.online = online;
    }
 
+   @Override public String toString()
+   {
+      return "Banner{" +
+               "id=" + id +
+               ", name='" + name + '\'' +
+               ", language='" + language + '\'' +
+               ", bannerType=" + bannerType +
+               ", active=" + active +
+               ", url='" + url + '\'' +
+               ", internal=" + internal +
+               ", description='" + description + '\'' +
+               ", image=" + image +
+               ", online=" + online +
+               '}';
+   }
 }

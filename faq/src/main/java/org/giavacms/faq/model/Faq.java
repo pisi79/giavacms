@@ -1,37 +1,40 @@
 package org.giavacms.faq.model;
 
-import java.util.Date;
-
 import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import javax.persistence.Transient;
-
-import org.giavacms.base.model.Page;
+import java.io.Serializable;
+import java.util.Date;
 
 @Entity
-@DiscriminatorValue(value = Faq.EXTENSION)
 @Table(name = Faq.TABLE_NAME)
-public class Faq extends Page
+public class Faq implements Serializable
 {
 
    private static final long serialVersionUID = 1L;
-   public static final String EXTENSION = "Faq";
    public static final String TABLE_NAME = "Faq";
    public static final boolean HAS_DETAILS = false;
 
    public Faq()
    {
-      super();
-      super.setExtension(EXTENSION);
    }
 
+   private Long id;
    private FaqCategory faqCategory;
    private Date date;
-
+   private String question;
    private String answer;
+
+   public Long getId()
+   {
+      return id;
+   }
+
+   public void setId(Long id)
+   {
+      this.id = id;
+   }
 
    @ManyToOne
    public FaqCategory getFaqCategory()
@@ -46,17 +49,14 @@ public class Faq extends Page
       this.faqCategory = faqCategory;
    }
 
-   @Transient
-   @Deprecated
    public String getQuestion()
    {
-      return super.getTitle();
+      return question;
    }
 
-   @Deprecated
    public void setQuestion(String question)
    {
-      super.setTitle(question);
+      this.question = question;
    }
 
    @Column(length = 1024)
@@ -83,9 +83,8 @@ public class Faq extends Page
    @Override
    public String toString()
    {
-      return "Faq [id=" + super.getId() + ", question=" + super.getTitle() + ", answer="
-               + answer + ", faqCategory=" + faqCategory
-               + ", active=" + super.isActive() + "]";
+      return "Faq [id=" + getId() + ", question=" + getQuestion() + ", answer="
+               + answer + ", faqCategory=" + faqCategory + "]";
    }
 
 }
